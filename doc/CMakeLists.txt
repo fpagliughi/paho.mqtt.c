@@ -17,29 +17,33 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 ### documentation settings
-FIND_PACKAGE(Doxygen)
-IF(NOT DOXYGEN_FOUND)
-    message(FATAL_ERROR "Doxygen is needed to build the documentation.")
-ENDIF()
-SET(DOXYTARGETS)
-FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc)
-FOREACH(DOXYFILE_SRC DoxyfileV3ClientAPI;DoxyfileV3AsyncAPI;DoxyfileV3ClientInternal)
-    SET(DOXYFILE_IN ${DOXYFILE_SRC}.in)
-    SET(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/${DOXYFILE_SRC})
+find_package(Doxygen)
 
-    CONFIGURE_FILE(${DOXYFILE_IN} ${DOXYFILE} @ONLY)
-    ADD_CUSTOM_TARGET(${DOXYFILE_SRC}.target
+if(NOT DOXYGEN_FOUND)
+    message(FATAL_ERROR "Doxygen is needed to build the documentation.")
+endif()
+
+set(DOXYTARGETS)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc)
+
+foreach(DOXYFILE_SRC DoxyfileV3ClientAPI;DoxyfileV3AsyncAPI;DoxyfileV3ClientInternal)
+    set(DOXYFILE_IN ${DOXYFILE_SRC}.in)
+    set(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/${DOXYFILE_SRC})
+
+    configure_file(${DOXYFILE_IN} ${DOXYFILE} @ONLY)
+    add_custom_target(${DOXYFILE_SRC}.target
         COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             COMMENT "Generating API documentation with Doxygen"
             VERBATIM
     )
-    SET(DOXYTARGETS ${DOXYTARGETS} ${DOXYFILE_SRC}.target)
-ENDFOREACH(DOXYFILE_SRC)
+    set(DOXYTARGETS ${DOXYTARGETS} ${DOXYFILE_SRC}.target)
+endforeach(DOXYFILE_SRC)
 
-ADD_CUSTOM_TARGET(doc ALL DEPENDS ${DOXYTARGETS})
-IF (PAHO_ENABLE_CPACK)
-    INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
-ELSE()
-    INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc DESTINATION ${CMAKE_INSTALL_DOCDIR})
-ENDIF()
+add_custom_target(doc ALL DEPENDS ${DOXYTARGETS})
+
+if(PAHO_ENABLE_CPACK)
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
+else()
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc DESTINATION ${CMAKE_INSTALL_DOCDIR})
+endif()
