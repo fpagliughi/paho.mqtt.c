@@ -86,13 +86,6 @@ if(PAHO_BUILD_SHARED)
         POSITION_INDEPENDENT_CODE ON
         COMPILE_DEFINITIONS "PAHO_MQTT_EXPORTS=1"
     )
-
-    add_executable(MQTTVersion MQTTVersion.c)
-
-    set_target_properties(MQTTVersion PROPERTIES
-        POSITION_INDEPENDENT_CODE ON
-        COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1"
-    )
 endif()
 
 if(PAHO_BUILD_STATIC)    
@@ -109,7 +102,6 @@ if(PAHO_BUILD_SHARED)
     
     target_link_libraries(paho-mqtt3c ${LIBS_SYSTEM})
     target_link_libraries(paho-mqtt3a ${LIBS_SYSTEM})
-    target_link_libraries(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
     
     set_target_properties(
         paho-mqtt3c paho-mqtt3a PROPERTIES
@@ -118,15 +110,15 @@ if(PAHO_BUILD_SHARED)
         COMPILE_DEFINITIONS "PAHO_MQTT_EXPORTS=1"
     )
 
-    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-		set(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
-		set(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
-	elseif(NOT WIN32)
-		set(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
-		set(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
-	endif()
-
     if(NOT WIN32)
+        if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+            set(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+            set(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+        else()
+            set(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+            set(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+        endif()
+
         set_target_properties(
             paho-mqtt3c PROPERTIES
             LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}"
@@ -152,14 +144,18 @@ if(PAHO_BUILD_SHARED)
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
-    install(TARGETS MQTTVersion
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
 endif()
 
 if(PAHO_BUILD_STATIC)
-    add_library(paho-mqtt3c-static STATIC $<TARGET_OBJECTS:common_obj_static> MQTTClient.c)
-    add_library(paho-mqtt3a-static STATIC $<TARGET_OBJECTS:common_obj_static> MQTTAsync.c MQTTAsyncUtils.c)
+    add_library(paho-mqtt3c-static STATIC
+        $<TARGET_OBJECTS:common_obj_static> 
+        MQTTClient.c
+    )
+    add_library(paho-mqtt3a-static STATIC
+        $<TARGET_OBJECTS:common_obj_static> 
+        MQTTAsync.c 
+        MQTTAsyncUtils.c
+    )
 
     target_link_libraries(paho-mqtt3c-static ${LIBS_SYSTEM})
     target_link_libraries(paho-mqtt3a-static ${LIBS_SYSTEM})
@@ -199,6 +195,20 @@ if(PAHO_BUILD_STATIC)
     endif()
 endif()
 
+# Create the 'MQTTVersion' app with the shared library
+if(PAHO_BUILD_SHARED)
+    add_executable(MQTTVersion MQTTVersion.c)
+
+    set_target_properties(MQTTVersion PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1"
+    )
+
+    target_link_libraries(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
+    install(TARGETS MQTTVersion RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+
+
 # The public header files
 install(
     FILES
@@ -237,15 +247,15 @@ if(PAHO_WITH_SSL)
             COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_EXPORTS=1"
         )
 
-        if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-		    set(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
-		    set(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
-        elseif(NOT WIN32)
-            set(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
-		    set(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
-        endif()
-
         if(NOT WIN32)
+            if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+                set(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+                set(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+            else()
+                set(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+                set(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+            endif()
+
             set_target_properties(
 	           paho-mqtt3cs PROPERTIES
 	           LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}"
@@ -306,20 +316,19 @@ if(PAHO_WITH_SSL)
             SOVERSION ${PAHO_VERSION_MAJOR}
             COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_STATIC=1"
         )
+
         if(NOT WIN32)
             set_target_properties(paho-mqtt3cs-static PROPERTIES OUTPUT_NAME paho-mqtt3cs)
             set_target_properties(paho-mqtt3as-static PROPERTIES OUTPUT_NAME paho-mqtt3as)
-        endif()
 
-	    if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-			set(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
-			set(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
-		elseif(NOT WIN32)
-			set(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
-			set(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
-		endif()
+            if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+                set(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+                set(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+            else()
+                set(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+                set(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+            endif()
 
-		if(NOT WIN32)
             set_target_properties(
                 paho-mqtt3cs-static PROPERTIES
 	            LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}"

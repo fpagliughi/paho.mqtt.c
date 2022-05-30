@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2020 logi.cals GmbH and others
+#  Copyright (c) 2015, 2020, 2022 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v2.0
@@ -66,7 +66,7 @@ if(PAHO_USE_SELECT)
 endif()
 
 if(NOT PAHO_BUILD_SHARED AND NOT PAHO_BUILD_STATIC)
-    message(FATAL_ERROR "You must set either PAHO_BUILD_SHARED, PAHO_BUILD_STATIC, or both")
+    message(FATAL_ERROR "You must set a build target, either PAHO_BUILD_SHARED, PAHO_BUILD_STATIC, or both")
 endif()
 
 if(PAHO_BUILD_DEB_PACKAGE)
@@ -109,13 +109,14 @@ if(PAHO_ENABLE_CPACK)
         set(CPACK_GENERATOR "TGZ")
     endif()
 else()
-    file(GLOB samples "src/samples/*.c")
-    install(FILES ${samples} DESTINATION ${CMAKE_INSTALL_DOCDIR})
+    file(GLOB SAMPLES "src/samples/*.c")
+    install(FILES ${SAMPLES} DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
 
 set(CPACK_PACKAGE_VERSION_MAJOR ${PAHO_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PAHO_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${PAHO_VERSION_PATCH})
+
 include(CPack)
 
 if(PAHO_ENABLE_TESTING)
