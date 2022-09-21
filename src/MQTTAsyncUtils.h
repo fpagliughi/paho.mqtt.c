@@ -20,9 +20,10 @@
 #include "MQTTPacket.h"
 #include "Thread.h"
 
-#define URI_TCP "tcp://"
-#define URI_WS  "ws://"
-#define URI_WSS "wss://"
+#define URI_TCP  "tcp://"
+#define URI_UNIX "unix://"
+#define URI_WS   "ws://"
+#define URI_WSS  "wss://"
 
 enum MQTTAsync_threadStates
 {
@@ -88,6 +89,7 @@ typedef struct
 typedef struct MQTTAsync_struct
 {
 	char* serverURI;
+	int unix;
 	int ssl;
 	int websocket;
 	Clients* c;

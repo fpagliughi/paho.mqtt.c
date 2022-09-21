@@ -1274,6 +1274,13 @@ static int MQTTAsync_processCommand(void)
 
 					if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 						serverURI += strlen(URI_TCP);
+#if defined(UNIXSOCK)
+					else if (strncmp(URI_UNIX, serverURI, strlen(URI_UNIX)) == 0)
+					{
+						serverURI += strlen(URI_UNIX);
+						command->client->unix = 1;
+					}
+#endif
 					else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 					{
 						serverURI += strlen(URI_WS);

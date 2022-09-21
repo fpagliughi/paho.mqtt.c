@@ -328,9 +328,12 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	if (strstr(serverURI, "://") != NULL)
 	{
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+#if defined(UNIXSOCK)
+		 && strncmp(URI_UNIX, serverURI, strlen(URI_UNIX)) != 0
+#endif
 		 && strncmp(URI_WS, serverURI, strlen(URI_WS)) != 0
 #if defined(OPENSSL)
-            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+         && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
 		 && strncmp(URI_WSS, serverURI, strlen(URI_WSS)) != 0
 #endif
 			)
@@ -372,6 +375,13 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	memset(m, '\0', sizeof(MQTTAsyncs));
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
+#if defined(UNIXSOCK)
+	else if (strncmp(URI_UNIX, serverURI, strlen(URI_UNIX)) == 0)
+	{
+		serverURI += strlen(URI_UNIX);
+		m->unix = 1;
+	}
+#endif
 	else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 	{
 		serverURI += strlen(URI_WS);
