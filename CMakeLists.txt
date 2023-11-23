@@ -17,8 +17,6 @@
 #     Frank Pagliughi - Update for more modern CMake conventions 
 #*******************************************************************************/
 
-# Note: on OS X you should install XCode and the associated command-line tools
-
 cmake_minimum_required(VERSION 3.5)
 
 project(EclipsePahoC 
@@ -33,23 +31,20 @@ set(CMAKE_SCRIPTS "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 ## build settings
+
 file(READ version.major PAHO_VERSION_MAJOR)
 file(READ version.minor PAHO_VERSION_MINOR)
 file(READ version.patch PAHO_VERSION_PATCH)
-SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
+
+set(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
 
 include(GNUInstallDirs)
 
 string(TIMESTAMP BUILD_TIMESTAMP UTC)
 message(STATUS "Timestamp is ${BUILD_TIMESTAMP}")
 
-if(WIN32)
-  add_definitions(-D_CRT_SECURE_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN)
-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-  add_definitions(-DOSX)
-endif()
-
 ## build options
+
 option(PAHO_WITH_SSL "Flag that defines whether to build ssl-enabled binaries too." FALSE)
 option(PAHO_BUILD_SHARED "Build shared library" TRUE)
 option(PAHO_BUILD_STATIC "Build static library" FALSE)
@@ -69,50 +64,51 @@ if(PAHO_USE_SELECT)
   add_definitions(-DUSE_SELECT=1)
 endif()
 
-if(not PAHO_BUILD_SHARED and not PAHO_BUILD_STATIC)
-    message(FATAL_ERROR "You must set either PAHO_BUILD_SHARED, PAHO_BUILD_STATIC, or both")
+if(NOT PAHO_BUILD_SHARED AND NOT PAHO_BUILD_STATIC)
+  message(FATAL_ERROR "You must set either PAHO_BUILD_SHARED, PAHO_BUILD_STATIC, or both")
 endif()
 
 if(PAHO_BUILD_DEB_PACKAGE)
-    set(CMAKE_INSTALL_DOCDIR share/doc/libpaho-mqtt)
-    set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
-    set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS_POLICY ">=")
+  set(CMAKE_INSTALL_DOCDIR share/doc/libpaho-mqtt)
+  set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
+  set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS_POLICY ">=")
 endif()
 
 add_subdirectory(src)
 
 if(PAHO_BUILD_SAMPLES)
-    add_subdirectory(src/samples)
+  add_subdirectory(src/samples)
 endif()
 
 if(PAHO_BUILD_DOCUMENTATION)
-    add_subdirectory(doc)
+  add_subdirectory(doc)
 endif()
 
 if(PAHO_ENABLE_CPACK)
-    ### packaging settings
-    file(GLOB samples "src/samples/*.c")
-    install(FILES ${samples} DESTINATION ${CMAKE_INSTALL_DOCDIR}/samples)
+  ### packaging settings
+  file(GLOB samples "src/samples/*.c")
+  install(FILES ${samples} DESTINATION ${CMAKE_INSTALL_DOCDIR}/samples)
 
-    set(CPACK_PACKAGE_VENDOR "Eclipse Paho")
-    set(CPACK_PACKAGE_NAME "Eclipse-Paho-MQTT-C")
+  set(CPACK_PACKAGE_VENDOR "Eclipse Paho")
+  set(CPACK_PACKAGE_NAME "Eclipse-Paho-MQTT-C")
+
+  install(FILES CONTRIBUTING.md epl-v20 edl-v10 README.md notice.html DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
+  if (WIN32)
+    set(CPACK_GENERATOR "ZIP")
+  elseif(PAHO_BUILD_DEB_PACKAGE)
     install(FILES CONTRIBUTING.md epl-v20 edl-v10 README.md notice.html DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
-    if (WIN32)
-        set(CPACK_GENERATOR "ZIP")
-    elseif(PAHO_BUILD_DEB_PACKAGE)
-        install(FILES CONTRIBUTING.md epl-v20 edl-v10 README.md notice.html DESTINATION ${CMAKE_INSTALL_DOCDIR})
-
-        set(CPACK_GENERATOR "DEB")
-        configure_file(${CMAKE_SCRIPTS}/CPackDebConfig.cmake.in
-                ${CMAKE_BINARY_DIR}/CPackDebConfig.cmake @ONLY)
-        set(CPACK_PROJECT_CONFIG_FILE ${CMAKE_BINARY_DIR}/CPackDebConfig.cmake)
-    else()
-        set(CPACK_GENERATOR "TGZ")
-    endif()
+    set(CPACK_GENERATOR "DEB")
+    configure_file(${CMAKE_SCRIPTS}/CPackDebConfig.cmake.in
+      ${CMAKE_BINARY_DIR}/CPackDebConfig.cmake @ONLY)
+    set(CPACK_PROJECT_CONFIG_FILE ${CMAKE_BINARY_DIR}/CPackDebConfig.cmake)
+  else()
+    set(CPACK_GENERATOR "TGZ")
+  endif()
 else()
-    file(GLOB samples "src/samples/*.c")
-    install(FILES ${samples} DESTINATION ${CMAKE_INSTALL_DOCDIR})
+  file(GLOB samples "src/samples/*.c")
+  install(FILES ${samples} DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
 
 set(CPACK_PACKAGE_VERSION_MAJOR ${PAHO_VERSION_MAJOR})
@@ -122,9 +118,9 @@ set(CPACK_PACKAGE_VERSION_PATCH ${PAHO_VERSION_PATCH})
 include(CPack)
 
 if(PAHO_ENABLE_TESTING)
-    enable_testing()
-    include_directories(test src)
-    add_subdirectory(test)
+  enable_testing()
+  include_directories(test src)
+  add_subdirectory(test)
 else()
-    include_directories(src)
+  include_directories(src)
 endif()
