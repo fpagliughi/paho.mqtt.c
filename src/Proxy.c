@@ -19,7 +19,7 @@
 #include <string.h>
 // for timeout process in Proxy_connect()
 #include <time.h>
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	#include <windows.h>
 	#if defined(_MSC_VER) && _MSC_VER < 1900
 		#define snprintf _snprintf
@@ -131,7 +131,7 @@ int Proxy_connect(networkHandles *net, int ssl, const char *hostname)
 				rc = SOCKET_ERROR;
 				break;
 			}
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 			Sleep(250);
 #else
 			usleep(250000);

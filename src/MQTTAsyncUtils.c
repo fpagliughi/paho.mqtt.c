@@ -17,7 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32)
 	#include <sys/time.h>
 #endif
 
@@ -76,7 +76,7 @@ extern List* MQTTAsync_handles;
 extern List* MQTTAsync_commands;
 extern int MQTTAsync_tostop;
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	#if defined(_MSC_VER) && _MSC_VER < 1900
 		#define snprintf _snprintf
 	#endif
@@ -103,7 +103,7 @@ extern cond_type send_cond;
 void MQTTAsync_sleep(long milliseconds)
 {
 	FUNC_ENTRY;
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);
@@ -904,7 +904,7 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 	}
 exit:
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32)
 	if ((rc1 = Thread_signal_cond(send_cond)) != 0)
 		Log(LOG_ERROR, 0, "Error %d from signal cond", rc1);
 #else
@@ -1804,7 +1804,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 			command_count = MQTTAsync_commands->count;
 			MQTTAsync_unlock_mutex(mqttcommand_mutex);
 		}
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32)
 		if ((rc = Thread_wait_cond(send_cond, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for condition variable", rc);
 #else
@@ -1829,7 +1829,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 #endif
 
 	FUNC_EXIT;
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	ExitThread(0);
 #endif
 	return 0;
@@ -1995,7 +1995,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 			}
 		}
 		m->pack = NULL;
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32)
 		Thread_signal_cond(send_cond);
 #else
 		Thread_post_sem(send_sem);
@@ -2321,7 +2321,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	receiveThread_state = STOPPED;
 	receiveThread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32)
 	if (sendThread_state != STOPPED)
 		Thread_signal_cond(send_cond);
 #else
@@ -2338,7 +2338,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 #endif
 
 	FUNC_EXIT;
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	ExitThread(0);
 #endif
 	return 0;

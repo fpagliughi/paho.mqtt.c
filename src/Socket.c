@@ -60,7 +60,7 @@ int Socket_continueWrite(SOCKET socket);
 char* Socket_getaddrname(struct sockaddr* sa, SOCKET sock);
 int Socket_abortWrite(SOCKET socket);
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 #define iov_len len
 #define iov_base buf
 #define snprintf _snprintf
@@ -84,7 +84,7 @@ extern mutex_type socket_mutex;
 int Socket_setnonblocking(SOCKET sock)
 {
 	int rc;
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	u_long flag = 1L;
 
 	FUNC_ENTRY;
@@ -112,7 +112,7 @@ int Socket_error(char* aString, SOCKET sock)
 {
 	int err;
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	err = WSAGetLastError();
 #else
 	err = errno;
@@ -131,7 +131,7 @@ int Socket_error(char* aString, SOCKET sock)
  */
 void Socket_outInitialize(void)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	WORD    winsockVer = 0x0202;
 	WSADATA wsd;
 
@@ -188,7 +188,7 @@ void Socket_outTerminate(void)
 		free(mod_s.saved.fds_read);
 #endif
 	SocketBuffer_terminate();
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	WSACleanup();
 #endif
 	FUNC_EXIT;
@@ -293,7 +293,7 @@ int Socket_addSocket(SOCKET newSd)
 
 	mod_s.fds_read[mod_s.nfds - 1].fd = newSd;
 	mod_s.fds_write[mod_s.nfds - 1].fd = newSd;
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	mod_s.fds_read[mod_s.nfds - 1].events = POLLIN;
 	mod_s.fds_write[mod_s.nfds - 1].events = POLLOUT;
 #else
@@ -720,7 +720,7 @@ int Socket_writev(SOCKET socket, iobuf* iovecs, int count, unsigned long* bytes)
 
 	FUNC_ENTRY;
 	*bytes = 0L;
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	rc = WSASend(socket, iovecs, count, (LPDWORD)bytes, 0, NULL, NULL);
 	if (rc == SOCKET_ERROR)
 	{
@@ -891,7 +891,7 @@ int Socket_close_only(SOCKET socket)
 	int rc;
 
 	FUNC_ENTRY;
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	if (shutdown(socket, SD_BOTH) == SOCKET_ERROR)
 		Socket_error("shutdown", socket);
 	if ((rc = closesocket(socket)) == SOCKET_ERROR)
@@ -1061,7 +1061,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	struct sockaddr_in6 address6;
 #endif
 	int rc = SOCKET_ERROR;
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	short family;
 #else
 	sa_family_t family = AF_INET;
@@ -1473,7 +1473,7 @@ char* Socket_getaddrname(struct sockaddr* sa, SOCKET sock)
 #define PORTLEN 10
 	static char addr_string[ADDRLEN + PORTLEN];
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 	int buflen = ADDRLEN*2;
 	wchar_t buf[ADDRLEN*2];
 	if (WSAAddressToStringW(sa, sizeof(struct sockaddr_in6), NULL, buf, (LPDWORD)&buflen) == SOCKET_ERROR)
