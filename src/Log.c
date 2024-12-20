@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2023 IBM Corp.
+ * Copyright (c) 2009, 2024 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -267,20 +267,16 @@ static traceEntry* Log_pretrace(void)
 {
 	traceEntry *cur_entry = NULL;
 
-	/* calling ftime/gettimeofday seems to be comparatively expensive, so we need to limit its use */
-	if (++sametime_count % 20 == 0)
-	{
 #if defined(GETTIMEOFDAY)
-		gettimeofday(&now_ts, NULL);
-		if (now_ts.tv_sec != last_ts.tv_sec || now_ts.tv_usec != last_ts.tv_usec)
+	gettimeofday(&now_ts, NULL);
+	if (now_ts.tv_sec != last_ts.tv_sec || now_ts.tv_usec != last_ts.tv_usec)
 #else
-		ftime(&now_ts);
-		if (now_ts.time != last_ts.time || now_ts.millitm != last_ts.millitm)
+	ftime(&now_ts);
+	if (now_ts.time != last_ts.time || now_ts.millitm != last_ts.millitm)
 #endif
-		{
-			sametime_count = 0;
-			last_ts = now_ts;
-		}
+	{
+		sametime_count = 0;
+		last_ts = now_ts;
 	}
 
 	if (trace_queue_size != trace_settings.max_trace_entries)
