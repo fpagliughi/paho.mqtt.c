@@ -294,6 +294,7 @@ typedef struct
 {
 	char* serverURI;
 	const char* currentServerURI; /* when using HA options, set the currently used serverURI */
+	int unixsock;
 #if defined(OPENSSL)
 	int ssl;
 #endif
@@ -1238,17 +1239,17 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 	Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, MQTTVersion);
 #if defined(OPENSSL)
 #if defined(__GNUC__) && defined(__linux__)
-	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, m->websocket, MQTTVersion, connectProperties, willProperties,
+	rc = MQTTProtocol_connect(serverURI, m->c, m->unixsock, m->ssl, m->websocket, MQTTVersion, connectProperties, willProperties,
 			millisecsTimeout - MQTTTime_elapsed(start));
 #else
-	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, m->websocket, MQTTVersion, connectProperties, willProperties);
+	rc = MQTTProtocol_connect(serverURI, m->c, m->unixsock, m->ssl, m->websocket, MQTTVersion, connectProperties, willProperties);
 #endif
 #else
 #if defined(__GNUC__) && defined(__linux__)
-	rc = MQTTProtocol_connect(serverURI, m->c, m->websocket, MQTTVersion, connectProperties, willProperties,
+	rc = MQTTProtocol_connect(serverURI, m->c, m->unixsock, m->websocket, MQTTVersion, connectProperties, willProperties,
 			millisecsTimeout - MQTTTime_elapsed(start));
 #else
-	rc = MQTTProtocol_connect(serverURI, m->c, m->websocket, MQTTVersion, connectProperties, willProperties);
+	rc = MQTTProtocol_connect(serverURI, m->c, m->unixsock, m->websocket, MQTTVersion, connectProperties, willProperties);
 #endif
 #endif
 	if (rc == SOCKET_ERROR)

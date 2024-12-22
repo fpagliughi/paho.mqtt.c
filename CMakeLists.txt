@@ -52,6 +52,7 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 endif()
 
 ## build options
+option(PAHO_WITH_UNIXSOCK "Flag that defines whether to enable Unix-domain sockets" FALSE)
 option(PAHO_WITH_SSL "Flag that defines whether to build ssl-enabled binaries too. " FALSE)
 option(PAHO_WITH_LIBRESSL "Flag that defines whether to build ssl-enabled binaries with LibreSSL instead of OpenSSL. " FALSE)
 option(PAHO_WITH_LIBUUID "Flag that defines whether libuuid or a custom uuid implementation should be used" FALSE)
@@ -64,6 +65,10 @@ option(PAHO_ENABLE_TESTING "Build tests and run" TRUE)
 option(PAHO_ENABLE_CPACK "Enable CPack" TRUE)
 option(PAHO_HIGH_PERFORMANCE "Disable tracing and heap tracking" FALSE)
 option(PAHO_USE_SELECT "Revert to select system call instead of poll" FALSE)
+
+if(PAHO_WITH_UNIXSOCK)
+  add_definitions(-DUNIXSOCK=1)
+endif()
 
 if(PAHO_HIGH_PERFORMANCE)
   add_definitions(-DHIGH_PERFORMANCE=1)

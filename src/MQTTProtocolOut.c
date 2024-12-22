@@ -203,18 +203,18 @@ exit:
  */
 #if defined(OPENSSL)
 #if defined(__GNUC__) && defined(__linux__)
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int unixsock, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
 #else
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int unixsock, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #endif
 #else
 #if defined(__GNUC__) && defined(__linux__)
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int unixsock, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
 #else
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int unixsock, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #endif
 #endif
@@ -281,6 +281,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #else
 		rc = Socket_new(aClient->net.https_proxy, addr_len, port, &(aClient->net.socket));
 #endif
+	}
+#endif
+#if defined(UNIXSOCK)
+	else if (unixsock) {
+		rc = Socket_unix_new(ip_address, addr_len, &(aClient->net.socket));
 	}
 #endif
 	else {

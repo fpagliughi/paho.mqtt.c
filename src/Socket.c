@@ -74,6 +74,10 @@ static void Socket_freeInterfaces(struct Socket_interface* interfaces, int count
 #define snprintf _snprintf
 #endif
 
+#if defined(UNIXSOCK)
+#include <sys/un.h>
+#endif
+
 /*
  * callback to select interfaces, if there is one
  */
@@ -1056,6 +1060,7 @@ exit:
 /**
  *  Create a new socket and TCP connect to an address/port
  *  @param addr the address string
+ *  @param assr_len the length of the address string
  *  @param port the TCP port
  *  @param sock returns the new socket
  *  @param timeout the timeout in milliseconds
@@ -1218,14 +1223,14 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	return codes from send, for testing only!
 */
 #if defined(SMALL_TCP_BUFFER_TESTING)
-        if (1)
-				{
-					int optsend = 100; //2 * 1440;
-					printf("Setting optsend to %d\n", optsend);
-					if (setsockopt(*sock, SOL_SOCKET, SO_SNDBUF, (void*)&optsend, sizeof(optsend)) != 0)
-						Log(LOG_ERROR, -1, "Could not set SO_SNDBUF for socket %d", *sock);
-				}
-	#endif
+			if (1)
+			{
+				int optsend = 100; //2 * 1440;
+				printf("Setting optsend to %d\n", optsend);
+				if (setsockopt(*sock, SOL_SOCKET, SO_SNDBUF, (void*)&optsend, sizeof(optsend)) != 0)
+					Log(LOG_ERROR, -1, "Could not set SO_SNDBUF for socket %d", *sock);
+			}
+#endif
 			if (interface_name)
 			{
 				rc = Socket_setInterface(*sock, interface_name, interface_family);
@@ -1297,6 +1302,63 @@ exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
+
+#if defined(UNIXSOCK)
+/**
+ *  Create a new socket and TCP connect to an address/port
+ *  @param addr the address string
+ *  @param assr_len the length of the address string
+ *  @param port the TCP port
+ *  @param sock returns the new socket
+ *  @param timeout the timeout in milliseconds
+ *  @return completion code 0=good, SOCKET_ERROR=fail
+ */
+int Socket_unix_new(const char* addr, size_t addr_len, SOCKET* sock)
+{
+	int type = SOCK_STREAM;
+	sa_family_t family = AF_UNIX;
+	struct sockaddr_un address;
+	int rc = SOCKET_ERROR;
+
+	FUNC_ENTRY;
+
+	if (addr_len >= sizeof(address.sun_path)) {
+		rc = PAHO_MEMORY_ERROR;
+	}
+	else {
+		address.sun_family = family;
+		memcpy(&address.sun_path, addr, addr_len);
+		address.sun_path[addr_len] = '\0';
+
+		*sock =	socket(family, type, 0);
+		if (*sock == INVALID_SOCKET)
+			rc = Socket_error("socket", *sock);
+		else
+		{
+#if defined(NOSIGPIPE)
+			int opt = 1;
+			if (setsockopt(*sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt)) != 0)
+				Log(LOG_ERROR, -1, "Could not set SO_NOSIGPIPE for socket %d", *sock);
+#endif
+			Log(TRACE_MIN, -1, "New UNIX socket %d for %s",	*sock, addr);
+			if (Socket_addSocket(*sock) == SOCKET_ERROR)
+				rc = Socket_error("addSocket", *sock);
+			else
+			{
+				/* this could complete immediately, even though we are non-blocking */
+				rc = connect(*sock, (struct sockaddr*)&address, sizeof(address));
+
+				if (rc == SOCKET_ERROR)
+					rc = Socket_error("connect", *sock);
+			}
+		}
+	}
+
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+#endif
 
 static Socket_writeContinue* writecontinue = NULL;
 

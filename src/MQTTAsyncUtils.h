@@ -25,6 +25,10 @@
 #define URI_WS   "ws://"
 #define URI_WSS  "wss://"
 
+#if defined(UNIXSOCK)
+  #define URI_UNIX "unix://"
+#endif
+
 enum MQTTAsync_threadStates
 {
 	STOPPED, STARTING, RUNNING, STOPPING
@@ -89,6 +93,7 @@ typedef struct
 typedef struct MQTTAsync_struct
 {
 	char* serverURI;
+	int unixsock;
 	int ssl;
 	int websocket;
 	Clients* c;
