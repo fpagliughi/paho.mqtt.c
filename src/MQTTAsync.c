@@ -1405,8 +1405,8 @@ int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token dt)
 		current = NULL;
 		while (ListNextElement(m->c->outboundMsgs, &current))
 		{
-			Messages* m = (Messages*)(current->content);
-			if (m->msgid == dt)
+			Messages* m2 = (Messages*)(current->content);
+			if (m2->msgid == dt)
 				goto exit;
 		}
 	}
@@ -1521,8 +1521,8 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 		current = NULL;
 		while (ListNextElement(m->c->outboundMsgs, &current))
 		{
-			Messages* m = (Messages*)(current->content);
-			(*tokens)[count++] = m->msgid;
+			Messages* m2 = (Messages*)(current->content);
+			(*tokens)[count++] = m2->msgid;
 		}
 	}
 	(*tokens)[count] = -1; /* indicate end of list */

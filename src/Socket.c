@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2023 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2024 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -1317,24 +1317,24 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 					if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 					{
 						SOCKET* pnewSd = (SOCKET*)malloc(sizeof(SOCKET));
-						ListElement* result = NULL;
+						ListElement* listResult = NULL;
 
-						if (!pnewSd)
-						{
-							rc = PAHO_MEMORY_ERROR;
-							goto exit;
-						}
-						*pnewSd = *sock;
-						Paho_thread_lock_mutex(socket_mutex);
-						result = ListAppend(mod_s.connect_pending, pnewSd, sizeof(SOCKET));
-						Paho_thread_unlock_mutex(socket_mutex);
-						if (!result)
-						{
-							free(pnewSd);
-							rc = PAHO_MEMORY_ERROR;
-							goto exit;
-						}
-						Log(TRACE_MIN, 15, "Connect pending");
+                        if (!pnewSd)
+                        {
+                            rc = PAHO_MEMORY_ERROR;
+                            goto exit;
+                        }
+                        *pnewSd = *sock;
+                        Paho_thread_lock_mutex(socket_mutex);
+                        listResult = ListAppend(mod_s.connect_pending, pnewSd, sizeof(SOCKET));
+                        Paho_thread_unlock_mutex(socket_mutex);
+                        if (!listResult)
+                        {
+                            free(pnewSd);
+                            rc = PAHO_MEMORY_ERROR;
+                            goto exit;
+                        }
+                        Log(TRACE_MIN, 15, "Connect pending");
 					}
 				}
 			}
