@@ -286,7 +286,18 @@ int Socket_addSocket(SOCKET newSd)
 	Paho_thread_lock_mutex(socket_mutex);
 	mod_s.nfds++;
 	if (mod_s.fds_read)
-		mod_s.fds_read = realloc(mod_s.fds_read, mod_s.nfds * sizeof(mod_s.fds_read[0]));
+	{
+		void* newPtr = realloc(mod_s.fds_read, mod_s.nfds * sizeof(mod_s.fds_read[0]));
+		if (newPtr == NULL)
+		{
+			free(mod_s.fds_read);
+			mod_s.fds_read = NULL;
+		}
+		else
+		{
+			mod_s.fds_read = newPtr;
+		}
+	}
 	else
 		mod_s.fds_read = malloc(mod_s.nfds * sizeof(mod_s.fds_read[0]));
 	if (!mod_s.fds_read)
@@ -295,7 +306,18 @@ int Socket_addSocket(SOCKET newSd)
 		goto exit;
 	}
 	if (mod_s.fds_write)
-		mod_s.fds_write = realloc(mod_s.fds_write, mod_s.nfds * sizeof(mod_s.fds_write[0]));
+	{
+		void* newPtr = realloc(mod_s.fds_write, mod_s.nfds * sizeof(mod_s.fds_write[0]));
+		if (newPtr == NULL)
+		{
+			free(mod_s.fds_write);
+			mod_s.fds_write = NULL;
+		}
+		else
+		{
+			mod_s.fds_write = newPtr;
+		}
+	}
 	else
 		mod_s.fds_write = malloc(mod_s.nfds * sizeof(mod_s.fds_write[0]));
 	if (!mod_s.fds_write)
@@ -538,7 +560,18 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 				}
 			}
 			else if (mod_s.saved.fds_read)
-				mod_s.saved.fds_read = realloc(mod_s.saved.fds_read, mod_s.nfds * sizeof(struct pollfd));
+			{
+				void* newPtr = realloc(mod_s.saved.fds_read, mod_s.nfds * sizeof(struct pollfd));
+				if (newPtr == NULL)
+				{
+					free(mod_s.saved.fds_read);
+					mod_s.saved.fds_read = NULL;
+				}
+				else
+				{
+					mod_s.saved.fds_read = newPtr;
+				}
+			}
 			else
 				mod_s.saved.fds_read = malloc(mod_s.nfds * sizeof(struct pollfd));
 
@@ -551,7 +584,18 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 				}
 			}
 			else if (mod_s.saved.fds_write)
-				mod_s.saved.fds_write = realloc(mod_s.saved.fds_write, mod_s.nfds * sizeof(struct pollfd));
+			{
+				void* newPtr = realloc(mod_s.saved.fds_write, mod_s.nfds * sizeof(struct pollfd));
+				if (newPtr == NULL)
+				{
+					free(mod_s.saved.fds_write);
+					mod_s.saved.fds_write = NULL;
+				}
+				else
+				{
+					mod_s.saved.fds_write = newPtr;
+				}
+			}
 			else
 				mod_s.saved.fds_write = malloc(mod_s.nfds * sizeof(struct pollfd));
 		}
@@ -1005,12 +1049,19 @@ int Socket_close(SOCKET socket)
 				/* shift array to remove the socket in question */
 				memmove(fd, fd + 1, (mod_s.nfds - (fd - mod_s.fds_read)) * sizeof(mod_s.fds_read[0]));
 			}
-			mod_s.fds_read = realloc(mod_s.fds_read, sizeof(mod_s.fds_read[0]) * mod_s.nfds);
-			if (mod_s.fds_read == NULL)
-			{
+	    void* newPtr = realloc(mod_s.fds_read, sizeof(mod_s.fds_read[0]) * mod_s.nfds);
+		  if (newPtr == NULL)
+		  {
+		    free(mod_s.fds_read);
+		  	mod_s.fds_read = NULL;
+
 				rc = PAHO_MEMORY_ERROR;
 				goto exit;
-			}
+		  }
+		  else
+		  {
+		    mod_s.fds_read = newPtr;
+		  }
 		}
 		Log(TRACE_MIN, -1, "Removed socket %d", socket);
 	}
@@ -1034,11 +1085,18 @@ int Socket_close(SOCKET socket)
 				/* shift array to remove the socket in question */
 				memmove(fd, fd + 1, (mod_s.nfds - (fd - mod_s.fds_write)) * sizeof(mod_s.fds_write[0]));
 			}
-			mod_s.fds_write = realloc(mod_s.fds_write, sizeof(mod_s.fds_write[0]) * mod_s.nfds);
-			if (mod_s.fds_write == NULL)
+			void* newPtr = realloc(mod_s.fds_write, sizeof(mod_s.fds_write[0]) * mod_s.nfds);
+			if (newPtr == NULL)
 			{
+				free(mod_s.fds_write);
+				mod_s.fds_write = NULL;
+
 				rc = PAHO_MEMORY_ERROR;
 				goto exit;
+			}
+			else
+			{
+				mod_s.fds_write = newPtr;
 			}
 		}
 		Log(TRACE_MIN, -1, "Removed socket %d", socket);
