@@ -98,7 +98,7 @@ extern mutex_type log_mutex;
 extern mutex_type mqttasync_mutex;
 extern mutex_type socket_mutex;
 extern mutex_type mqttcommand_mutex;
-extern cond_type send_cond;
+extern evt_type send_evt;
 #endif
 
 #if !defined(min)
@@ -937,8 +937,8 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 exit:
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 #if !defined(_WIN32) && !defined(_WIN64)
-	if ((rc1 = Thread_signal_cond(send_cond)) != 0)
-		Log(LOG_ERROR, 0, "Error %d from signal cond", rc1);
+	if ((rc1 = Thread_signal_evt(send_evt)) != 0)
+		Log(LOG_ERROR, 0, "Error %d from signal event", rc1);
 #else
 	if ((rc1 = Thread_post_sem(send_sem)) != 0)
 		Log(LOG_ERROR, 0, "Error %d from signal cond", rc1);
@@ -1848,8 +1848,8 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 			MQTTAsync_unlock_mutex(mqttcommand_mutex);
 		}
 #if !defined(_WIN32) && !defined(_WIN64)
-		if ((rc = Thread_wait_cond(send_cond, timeout)) != 0 && rc != ETIMEDOUT)
-			Log(LOG_ERROR, -1, "Error %d waiting for condition variable", rc);
+		if ((rc = Thread_wait_evt(send_evt, timeout)) != 0 && rc != ETIMEDOUT)
+			Log(LOG_ERROR, -1, "Error %d waiting for send event", rc);
 #else
 		if ((rc = Thread_wait_sem(send_sem, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
@@ -2059,7 +2059,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 		}
 		m->pack = NULL;
 #if !defined(_WIN32) && !defined(_WIN64)
-		Thread_signal_cond(send_cond);
+		Thread_signal_evt(send_evt);
 #else
 		Thread_post_sem(send_sem);
 #endif
@@ -2390,7 +2390,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 #if !defined(_WIN32) && !defined(_WIN64)
 	if (sendThread_state != STOPPED)
-		Thread_signal_cond(send_cond);
+		Thread_signal_evt(send_evt);
 #else
 	if (sendThread_state != STOPPED)
 		Thread_post_sem(send_sem);
@@ -3135,7 +3135,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 					*rc = MQTTProtocol_handlePubcomps(pack, *sock, &pubToRemove);
 					if (sendThread_state != STOPPED)
 #if !defined(_WIN32) && !defined(_WIN64)
-						Thread_signal_cond(send_cond);
+						Thread_signal_evt(send_evt);
 #else
 						Thread_post_sem(send_sem);
 #endif
@@ -3147,7 +3147,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 					*rc = MQTTProtocol_handlePubacks(pack, *sock, &pubToRemove);
 					if (sendThread_state != STOPPED)
 #if !defined(_WIN32) && !defined(_WIN64)
-						Thread_signal_cond(send_cond);
+						Thread_signal_evt(send_evt);
 #else
 						Thread_post_sem(send_sem);
 #endif
