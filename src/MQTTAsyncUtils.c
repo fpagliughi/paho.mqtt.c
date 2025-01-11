@@ -88,7 +88,6 @@ extern int MQTTAsync_tostop;
 extern mutex_type mqttasync_mutex;
 extern mutex_type socket_mutex;
 extern mutex_type mqttcommand_mutex;
-extern evt_type send_evt;
 #if !defined(NO_HEAP_TRACKING)
 extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
@@ -98,8 +97,9 @@ extern mutex_type log_mutex;
 extern mutex_type mqttasync_mutex;
 extern mutex_type socket_mutex;
 extern mutex_type mqttcommand_mutex;
-extern evt_type send_evt;
 #endif
+
+extern evt_type send_evt;
 
 #if !defined(min)
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -936,13 +936,8 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 	}
 exit:
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
-#if !defined(_WIN32) && !defined(_WIN64)
-	if ((rc1 = Thread_signal_evt(send_evt)) != 0)
-		Log(LOG_ERROR, 0, "Error %d from signal event", rc1);
-#else
 	if ((rc1 = Thread_signal_evt(send_evt)) != 0)
 		Log(LOG_ERROR, 0, "Error %d from signal cond", rc1);
-#endif
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1847,13 +1842,8 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 			command_count = MQTTAsync_commands->count;
 			MQTTAsync_unlock_mutex(mqttcommand_mutex);
 		}
-#if !defined(_WIN32) && !defined(_WIN64)
-		if ((rc = Thread_wait_evt(send_evt, timeout)) != 0 && rc != ETIMEDOUT)
-			Log(LOG_ERROR, -1, "Error %d waiting for send event", rc);
-#else
 		if ((rc = Thread_wait_evt(send_evt, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
-#endif
 		timeout = 1000; /* 1 second for follow on waits */
 		MQTTAsync_checkTimeouts();
 	}
@@ -2058,11 +2048,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 			}
 		}
 		m->pack = NULL;
-#if !defined(_WIN32) && !defined(_WIN64)
 		Thread_signal_evt(send_evt);
-#else
-		Thread_signal_evt(send_evt);
-#endif
 	}
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -2388,13 +2374,8 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	receiveThread_state = STOPPED;
 	receiveThread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
-#if !defined(_WIN32) && !defined(_WIN64)
 	if (sendThread_state != STOPPED)
 		Thread_signal_evt(send_evt);
-#else
-	if (sendThread_state != STOPPED)
-		Thread_signal_evt(send_evt);
-#endif
 
 #if defined(OPENSSL)
 #if ((OPENSSL_VERSION_NUMBER < 0x1010000fL) || defined(LIBRESSL_VERSION_NUMBER))
@@ -3134,11 +3115,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 				{
 					*rc = MQTTProtocol_handlePubcomps(pack, *sock, &pubToRemove);
 					if (sendThread_state != STOPPED)
-#if !defined(_WIN32) && !defined(_WIN64)
 						Thread_signal_evt(send_evt);
-#else
-						Thread_signal_evt(send_evt);
-#endif
 				}
 				else if (msgtype == PUBREC)
 					*rc = MQTTProtocol_handlePubrecs(pack, *sock, &pubToRemove);
@@ -3146,11 +3123,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 				{
 					*rc = MQTTProtocol_handlePubacks(pack, *sock, &pubToRemove);
 					if (sendThread_state != STOPPED)
-#if !defined(_WIN32) && !defined(_WIN64)
 						Thread_signal_evt(send_evt);
-#else
-						Thread_signal_evt(send_evt);
-#endif
 				}
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
