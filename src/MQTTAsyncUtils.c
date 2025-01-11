@@ -88,7 +88,7 @@ extern int MQTTAsync_tostop;
 extern mutex_type mqttasync_mutex;
 extern mutex_type socket_mutex;
 extern mutex_type mqttcommand_mutex;
-extern sem_type send_sem;
+extern evt_type send_evt;
 #if !defined(NO_HEAP_TRACKING)
 extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
@@ -940,7 +940,7 @@ exit:
 	if ((rc1 = Thread_signal_evt(send_evt)) != 0)
 		Log(LOG_ERROR, 0, "Error %d from signal event", rc1);
 #else
-	if ((rc1 = Thread_post_sem(send_sem)) != 0)
+	if ((rc1 = Thread_signal_evt(send_evt)) != 0)
 		Log(LOG_ERROR, 0, "Error %d from signal cond", rc1);
 #endif
 	FUNC_EXIT_RC(rc);
@@ -1851,7 +1851,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 		if ((rc = Thread_wait_evt(send_evt, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for send event", rc);
 #else
-		if ((rc = Thread_wait_sem(send_sem, timeout)) != 0 && rc != ETIMEDOUT)
+		if ((rc = Thread_wait_evt(send_evt, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
 #endif
 		timeout = 1000; /* 1 second for follow on waits */
@@ -2061,7 +2061,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 #if !defined(_WIN32) && !defined(_WIN64)
 		Thread_signal_evt(send_evt);
 #else
-		Thread_post_sem(send_sem);
+		Thread_signal_evt(send_evt);
 #endif
 	}
 	FUNC_EXIT_RC(rc);
@@ -2393,7 +2393,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		Thread_signal_evt(send_evt);
 #else
 	if (sendThread_state != STOPPED)
-		Thread_post_sem(send_sem);
+		Thread_signal_evt(send_evt);
 #endif
 
 #if defined(OPENSSL)
@@ -3137,7 +3137,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 #if !defined(_WIN32) && !defined(_WIN64)
 						Thread_signal_evt(send_evt);
 #else
-						Thread_post_sem(send_sem);
+						Thread_signal_evt(send_evt);
 #endif
 				}
 				else if (msgtype == PUBREC)
@@ -3149,7 +3149,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 #if !defined(_WIN32) && !defined(_WIN64)
 						Thread_signal_evt(send_evt);
 #else
-						Thread_post_sem(send_sem);
+						Thread_signal_evt(send_evt);
 #endif
 				}
 				if (!m)
