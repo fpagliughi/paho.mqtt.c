@@ -1823,8 +1823,11 @@ exit:
 
 thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 {
+#if defined(HIGH_PERFORMANCE)
+	int timeout = 1; /* first time in we have a small timeout.  Gets things started more quickly */
+#else
 	int timeout = 10; /* first time in we have a small timeout.  Gets things started more quickly */
-
+#endif
 	FUNC_ENTRY;
 	Thread_set_name("MQTTAsync_send");
 	MQTTAsync_lock_mutex(mqttasync_mutex);
@@ -1854,7 +1857,11 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 		if ((rc = Thread_wait_sem(send_sem, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
 #endif
+#if defined(HIGH_PERFORMANCE)
+		timeout = 10;   /* 10 ms for follow on waits */
+#else
 		timeout = 1000; /* 1 second for follow on waits */
+#endif
 		MQTTAsync_checkTimeouts();
 	}
 	sendThread_state = STOPPING;
@@ -2094,8 +2101,9 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 
 		if (sock == 0)
 			continue;
+#if !defined(HIGH_PERFORMANCE)
 		timeout = 1000L;
-
+#endif
 		/* find client corresponding to socket */
 		if (ListFindItem(MQTTAsync_handles, &sock, clientSockCompare) == NULL)
 		{
@@ -3075,7 +3083,11 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 		should_stop = MQTTAsync_tostop;
 		MQTTAsync_unlock_mutex(mqttasync_mutex);
 		if (!should_stop && *sock == 0 && (timeout > 0L))
+#if defined(HIGH_PERFORMANCE)
+			MQTTAsync_sleep(10L);
+#else
 			MQTTAsync_sleep(100L);
+#endif
 #if defined(OPENSSL)
 	}
 #endif

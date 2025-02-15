@@ -1764,7 +1764,7 @@ void MQTTAsync_setTraceCallback(MQTTAsync_traceCallback* callback)
 
 MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void)
 {
-	#define MAX_INFO_STRINGS 8
+	#define MAX_INFO_STRINGS 9
 	static MQTTAsync_nameValue libinfo[MAX_INFO_STRINGS + 1];
 	int i = 0;
 
@@ -1776,6 +1776,10 @@ MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void)
 
 	libinfo[i].name = "Build level";
 	libinfo[i++].value = BUILD_TIMESTAMP;
+#if defined(HIGH_PERFORMANCE)
+	libinfo[i].name = "High Performance";
+	libinfo[i++].value = "true";
+#endif
 #if defined(OPENSSL)
 	libinfo[i].name = "OpenSSL version";
 	libinfo[i++].value = SSLeay_version(SSLEAY_VERSION);
