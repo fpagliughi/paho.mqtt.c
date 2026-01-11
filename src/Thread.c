@@ -18,6 +18,7 @@
  *    Ian Craggs - change MacOS semaphore implementation
  *    Ian Craggs - fix for clock #284
  *    Frank Pagliughi - Consolidated semaphores and conditions into "events"
+ *    Frank Pagliughi - Added portable condition variables
  *******************************************************************************/
 
 /**
@@ -177,8 +178,11 @@ mutex_type Paho_thread_create_mutex(int* rc)
 	FUNC_ENTRY;
 	*rc = -1;
 	#if defined(_WIN32)
-		mutex = CreateMutex(NULL, 0, NULL);
-		*rc = (mutex == NULL) ? GetLastError() : 0;
+		mutex = malloc(sizeof(CRITICAL_SECTION));
+        if (mutex) {
+            InitializeCriticalSection(mutex);
+            *rc = 0;
+        }
 	#else
 		mutex = malloc(sizeof(pthread_mutex_t));
 		if (mutex)
@@ -199,8 +203,8 @@ int Paho_thread_lock_mutex(mutex_type mutex)
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
 	#if defined(_WIN32)
-		/* WaitForSingleObject returns WAIT_OBJECT_0 (0), on success */
-		rc = WaitForSingleObject(mutex, INFINITE);
+        EnterCriticalSection(mutex);
+        rc = 0;
 	#else
 		rc = pthread_mutex_lock(mutex);
 	#endif
@@ -220,18 +224,14 @@ int Paho_thread_unlock_mutex(mutex_type mutex)
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
 	#if defined(_WIN32)
-		/* if ReleaseMutex fails, the return value is 0 */
-		if (ReleaseMutex(mutex) == 0)
-			rc = GetLastError();
-		else
-			rc = 0;
+        LeaveCriticalSection(mutex);
+        rc = 0;
 	#else
 		rc = pthread_mutex_unlock(mutex);
 	#endif
 
 	return rc;
 }
-
 
 /**
  * Destroy a mutex which has already been created
@@ -243,15 +243,125 @@ int Paho_thread_destroy_mutex(mutex_type mutex)
 
 	FUNC_ENTRY;
 	#if defined(_WIN32)
-		rc = CloseHandle(mutex);
+        DeleteCriticalSection(mutex);
 	#else
 		rc = pthread_mutex_destroy(mutex);
-		free(mutex);
 	#endif
+    free(mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
+
+/* Condition Variables */
+
+condvar_type Thread_condvar_create(int* rc)
+{
+	condvar_type cond = NULL;
+
+	FUNC_ENTRY;
+	*rc = -1;
+	#if defined(_WIN32)
+		cond = malloc(sizeof(CONDITION_VARIABLE));
+        if (cond) {
+            InitializeConditionVariable(cond);
+            *rc = 0;
+        }
+	#else
+		cond = malloc(sizeof(pthread_cond_t));
+		if (cond)
+            *rc = pthread_cond_init(cond, NULL);
+	#endif
+	FUNC_EXIT_RC(*rc);
+	return cond;
+}
+
+int Thread_condvar_destroy(condvar_type cond)
+{
+	int rc = 0;
+
+	FUNC_ENTRY;
+    /* Nothing needed for Windows */
+	#if !defined(_WIN32)
+		rc = pthread_cond_destroy(cond);
+	#endif
+    free(cond);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+int Thread_condvar_wait(condvar_type cond, mutex_type mutex)
+{
+	int rc = -1;
+
+	#if defined(_WIN32)
+        if (SleepConditionVariableCS(cond, mutex, INFINITE))
+            rc = 0;
+	#else
+        rc = pthread_cond_wait(cond, mutex);
+	#endif
+
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+int Thread_condvar_timed_wait(condvar_type cond, mutex_type mutex, uint32_t timeout_ms)
+{
+    int rc = -1;
+
+	#if defined(_WIN32)
+        if (SleepConditionVariableCS(cond, mutex, timeout_ms)) {
+            rc = 0;
+        }
+        else {
+            if (GetLastError() == ERROR_TIMEOUT)
+                rc = ETIMEDOUT;
+        }
+    #else
+        struct timespec ts;
+        struct timeval tv;
+
+        /* Get current time */
+        gettimeofday(&tv, NULL);
+
+        /* Convert to timespec and add timeout */
+        ts.tv_sec = tv.tv_sec + (timeout_ms / 1000);
+        ts.tv_nsec = (tv.tv_usec * 1000) + ((timeout_ms % 1000) * 1000000);
+
+        /* Handle nanosecond overflow */
+        if (ts.tv_nsec >= NSEC_PER_SEC) {
+            ts.tv_sec += ts.tv_nsec / NSEC_PER_SEC;
+            ts.tv_nsec = ts.tv_nsec % NSEC_PER_SEC;
+        }
+
+        rc = pthread_cond_timedwait(cond, mutex, &ts);
+    #endif
+    return rc;
+}
+
+int Thread_condvar_signal(condvar_type cond) {
+    int rc = -1;
+
+    #if defined(_WIN32)
+        WakeConditionVariable(cond);
+        rc = 0;
+    #else
+        rc = pthread_cond_signal(cond);
+    #endif
+    return rc;
+}
+
+int Thread_condvar_broadcast(condvar_type cond) {
+    int rc = -1;
+
+    #if defined(_WIN32)
+        WakeAllConditionVariable(cond);
+        rc = 0;
+    #else
+        rc = pthread_cond_broadcast(cond);
+    #endif
+    return rc;
+}
 
 /* Event functions */
 

@@ -27,10 +27,10 @@
 
 #if !defined(_WINDOWS)
 	#include <sys/time.h>
-  #include <sys/socket.h>
+	#include <sys/socket.h>
 	#include <unistd.h>
-  #include <errno.h>
-  #define WINAPI
+	#include <errno.h>
+	#define WINAPI
 #else
 	#include <windows.h>
 #endif
@@ -254,6 +254,111 @@ thread_return_type evt_secondary(void* n)
 }
 
 
+typedef struct {
+	condvar_type condvar;
+	mutex_type mutex;
+} condvar_test_data;
+
+thread_return_type condvar_secondary(void* n)
+{
+	int rc = 0;
+	condvar_test_data* data = (condvar_test_data*)n;
+	START_TIME_TYPE start;
+	long duration;
+
+	MyLog(LOGA_DEBUG, "This will time out");
+	rc = Paho_thread_lock_mutex(data->mutex);
+	assert("rc 0 from lock mutex", rc == 0, "rc was %d", rc);
+
+	start = start_clock();
+	rc = Thread_condvar_timed_wait(data->condvar, data->mutex, 1000);
+	duration = elapsed(start);
+	MyLog(LOGA_INFO, "Wait duration was %ld", duration);
+	assert("duration is about 1s", duration >= 999L && duration <= 1050L, "duration was %ld", duration);
+	assert("rc ETIMEDOUT from timed_wait", rc == ETIMEDOUT, "rc was %d", rc);
+
+	rc = Paho_thread_unlock_mutex(data->mutex);
+	assert("rc 0 from unlock mutex", rc == 0, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "This should hang around a few seconds");
+	rc = Paho_thread_lock_mutex(data->mutex);
+	assert("rc 0 from lock mutex", rc == 0, "rc was %d", rc);
+
+	start = start_clock();
+	rc = Thread_condvar_timed_wait(data->condvar, data->mutex, 99999);
+	duration = elapsed(start);
+	MyLog(LOGA_INFO, "Wait duration was %ld", duration);
+	assert("duration is around 1s", duration >= 990L && duration <= 1010L, "duration was %ld", duration);
+	assert("rc 0 from timed_wait", rc == 0, "rc was %d", rc);
+
+	rc = Paho_thread_unlock_mutex(data->mutex);
+	assert("rc 0 from unlock mutex", rc == 0, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Secondary condvar thread ending");
+	return 0;
+}
+
+
+int test_condvar(struct Options options)
+{
+	char* testname = "test_condvar";
+	int rc = 0;
+	START_TIME_TYPE start;
+	long duration;
+	condvar_test_data data;
+
+	data.condvar = Thread_condvar_create(&rc);
+	assert("rc 0 from create condvar", rc == 0, "rc was %d", rc);
+
+	data.mutex = Paho_thread_create_mutex(&rc);
+	assert("rc 0 from create mutex", rc == 0, "rc was %d", rc);
+
+	MyLog(LOGA_INFO, "Starting condvar test");
+	fprintf(xml, "<testcase classname=\"condvar\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	MyLog(LOGA_DEBUG, "Check timeout");
+	rc = Paho_thread_lock_mutex(data.mutex);
+	assert("rc 0 from lock mutex", rc == 0, "rc was %d", rc);
+
+	start = start_clock();
+	rc = Thread_condvar_timed_wait(data.condvar, data.mutex, 2000);
+	duration = elapsed(start);
+	assert("rc ETIMEDOUT from timed_wait", rc == ETIMEDOUT, "rc was %d", rc);
+	MyLog(LOGA_INFO, "Wait duration was %ld", duration);
+	assert("duration is 2s", duration >= 1999L && duration < 2050L, "duration was %ld", duration);
+
+	rc = Paho_thread_unlock_mutex(data.mutex);
+	assert("rc 0 from unlock mutex", rc == 0, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Starting secondary thread");
+	Paho_thread_start(condvar_secondary, (void*)&data);
+
+	MyLog(LOGA_DEBUG, "wait for secondary thread to enter second wait");
+	mysleep(2);
+
+	MyLog(LOGA_DEBUG, "signal secondary");
+	rc = Thread_condvar_signal(data.condvar);
+	assert("rc 0 from signal condvar", rc == 0, "rc was %d", rc);
+
+	mysleep(1);
+
+	rc = Thread_condvar_destroy(data.condvar);
+	assert("rc 0 from destroy condvar", rc == 0, "rc was %d", rc);
+
+	rc = Paho_thread_destroy_mutex(data.mutex);
+	assert("rc 0 from destroy mutex", rc == 0, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Main thread ending");
+
+	exit: MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+
+	return failures;
+}
+
+
 int test_evt(struct Options options)
 {
 	char* testname = "test_evt";
@@ -266,7 +371,7 @@ int test_evt(struct Options options)
 	fprintf(xml, "<testcase classname=\"evt\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	/* The semaphore should be created non-signaled */
+    /* The event is created non-signaled */
 	rc = Thread_wait_evt(evt, 0);
 	assert("rc 0 from wait_evt", rc == ETIMEDOUT, "rc was %d", rc);
 
@@ -397,6 +502,7 @@ int main(int argc, char** argv)
  	int (*tests[])(struct Options) = {
 		NULL,
  		test_mutex,
+		test_condvar,
 		test_evt
  	}; /* indexed starting from 1 */
 	int i;
