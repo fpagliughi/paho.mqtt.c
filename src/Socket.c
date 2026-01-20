@@ -419,7 +419,7 @@ int isReady(int index)
  *  @param rc a value other than 0 indicates an error of the returned socket
  *  @return the socket next ready, or 0 if none is ready
  */
-SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
+SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, unsigned *ncli, int* rc)
 {
 	SOCKET sock = 0;
 	*rc = 0;
@@ -427,6 +427,8 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 
 	FUNC_ENTRY;
 	Paho_thread_lock_mutex(mutex);
+    if (ncli != NULL)
+        *ncli = (unsigned) mod_s.clientsds->count;
 	if (mod_s.clientsds->count == 0)
 		goto exit;
 		
@@ -528,7 +530,7 @@ exit:
  *  @param rc a value other than 0 indicates an error of the returned socket
  *  @return the socket next ready, or 0 if none is ready
  */
-SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
+SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, unsigned* ncli, int* rc)
 {
 	SOCKET sock = 0;
 	*rc = 0;
@@ -536,6 +538,8 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 
 	FUNC_ENTRY;
 	Paho_thread_lock_mutex(mutex);
+	if (ncli != NULL)
+		*ncli = mod_s.nfds;
 	if (mod_s.nfds == 0 && mod_s.saved.nfds == 0)
 		goto exit;
 
