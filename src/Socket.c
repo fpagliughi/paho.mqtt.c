@@ -808,7 +808,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 				printf("Socket %d is connecting, reducing timeout from %d, sockets %d\n", mod_s.saved.cur_fd, timeout_ms,
 					mod_s.saved.nfds);
 
-				timeout_ms = (mod_s.saved.nfds > 2) ? 10 : 10;
+				timeout_ms = 0; //(mod_s.saved.nfds > 2) ? 10 : 10;
 				break;
 			}
 			mod_s.saved.cur_fd = (mod_s.saved.cur_fd == mod_s.saved.nfds - 1) ? -1 : mod_s.saved.cur_fd + 1;
