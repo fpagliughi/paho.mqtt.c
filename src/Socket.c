@@ -288,7 +288,7 @@ int Socket_pair()
 
 int Socket_interrupt()
 {
-	printf("Calling interrupt\n");
+	//printf("Calling interrupt\n");
 	int rc = send(sockfd[1], "\0", 1, 0);
 	return rc;
 }
@@ -805,10 +805,10 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 		{
 			if (isConnectReady(mod_s.saved.cur_fd))
 			{
-				printf("Socket %d is connecting, reducing timeout from %d, sockets %d\n", mod_s.saved.cur_fd, timeout_ms,
-					mod_s.saved.nfds);
+				//printf("Socket %d is connecting, reducing timeout from %d, sockets %d\n", mod_s.saved.cur_fd, timeout_ms,
+				//	mod_s.saved.nfds);
 
-				timeout_ms = 0; //(mod_s.saved.nfds > 2) ? 10 : 10;
+				timeout_ms = 0;
 				break;
 			}
 			mod_s.saved.cur_fd = (mod_s.saved.cur_fd == mod_s.saved.nfds - 1) ? -1 : mod_s.saved.cur_fd + 1;

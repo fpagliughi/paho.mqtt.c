@@ -3076,8 +3076,6 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		should_stop = MQTTAsync_tostop;
 		MQTTAsync_unlock_mutex(mqttasync_mutex);
-		if (!should_stop && *sock == 0 && (timeout > 0L) && (interrupted == 0))
-			MQTTAsync_sleep(50L);
 #if defined(OPENSSL)
 	}
 #endif
