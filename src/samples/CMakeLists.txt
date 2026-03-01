@@ -59,6 +59,7 @@ if(PAHO_BUILD_SHARED)
     MQTTAsync_subscribe
     MQTTAsync_publish
     MQTTAsync_publish_time
+    MQTTAsync_reconnect
     MQTTClient_subscribe
     MQTTClient_publish
     MQTTClient_publish_async
@@ -69,7 +70,7 @@ if(PAHO_BUILD_SHARED)
   )
   endforeach()
 
-  foreach(TARGET MQTTAsync_subscribe MQTTAsync_publish MQTTAsync_publish_time)
+  foreach(TARGET MQTTAsync_subscribe MQTTAsync_publish MQTTAsync_publish_time MQTTAsync_reconnect)
     target_link_libraries(${TARGET} paho-mqtt3a)
   endforeach()
 
@@ -82,6 +83,7 @@ if(PAHO_BUILD_SHARED)
       MQTTAsync_subscribe
       MQTTAsync_publish
       MQTTAsync_publish_time
+      MQTTAsync_reconnect
       MQTTClient_subscribe
       MQTTClient_publish
       MQTTClient_publish_async
@@ -119,6 +121,7 @@ if(PAHO_BUILD_STATIC)
     MQTTAsync_subscribe
     MQTTAsync_publish
     MQTTAsync_publish_time
+    MQTTAsync_reconnect
     MQTTClient_subscribe
     MQTTClient_publish
     MQTTClient_publish_async
@@ -126,7 +129,7 @@ if(PAHO_BUILD_STATIC)
     add_executable(${TARGET}_static ${TARGET}.c)
   endforeach()
 
-  foreach(TARGET MQTTAsync_subscribe MQTTAsync_publish MQTTAsync_publish_time)
+  foreach(TARGET MQTTAsync_subscribe MQTTAsync_publish MQTTAsync_publish_time MQTTAsync_reconnect)
     target_link_libraries(${TARGET}_static paho-mqtt3a-static)
   endforeach()
 
@@ -139,6 +142,7 @@ if(PAHO_BUILD_STATIC)
       MQTTAsync_subscribe_static
       MQTTAsync_publish_static
       MQTTAsync_publish_time_static
+      MQTTAsync_reconnect_static
       MQTTClient_subscribe_static
       MQTTClient_publish_static
       MQTTClient_publish_async_static
