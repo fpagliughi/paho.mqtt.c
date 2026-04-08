@@ -66,12 +66,18 @@ option(PAHO_HIGH_PERFORMANCE "Disable tracing and heap tracking" FALSE)
 option(PAHO_USE_SELECT "Revert to select system call instead of poll" FALSE)
 option(PAHO_NO_TCP_NODELAY "Don't disable Nagle's algorithm on TCP sockets" FALSE)
 
-if(NOT WIN32)
-    option(PAHO_WITH_UNIX_SOCKETS "Flag that defines whether to enable Unix-domain sockets" FALSE)
+option(PAHO_WITH_UNIX_SOCKETS "Flag that defines whether to enable Unix-domain sockets" FALSE)
 
-    if(PAHO_WITH_UNIX_SOCKETS)
-      add_definitions(-DUNIXSOCK=1)
+if(PAHO_WITH_UNIX_SOCKETS)
+  if(WIN32)
+    include(CheckIncludeFile)
+    check_include_file("afunix.h" HAVE_AFUNIX_H)
+    if(NOT HAVE_AFUNIX_H)
+      message(FATAL_ERROR "PAHO_WITH_UNIX_SOCKETS requires <afunix.h> which was not found. "
+        "Please use Windows 10 SDK version 1803 (10.0.17134.0) or later.")
     endif()
+  endif()
+  add_definitions(-DUNIXSOCK=1)
 endif()
 
 if(PAHO_HIGH_PERFORMANCE)

@@ -49,7 +49,11 @@
 #include "Heap.h"
 
 #if defined(UNIXSOCK)
+#if defined(_WIN32)
+#include <afunix.h>
+#else
 #include <sys/un.h>
+#endif
 #endif
 
 #if defined(USE_SELECT)
