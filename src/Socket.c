@@ -1583,10 +1583,38 @@ int Socket_unix_new(const char* addr, size_t addr_len, SOCKET* sock)
 				rc = Socket_error("addSocket", *sock);
 			else
 			{
-				/* this will complete immediately, even though we are non-blocking */
+				/* this could complete immediately, even though we are non-blocking */
 				rc = connect(*sock, (struct sockaddr*)&address, sizeof(address));
 				if (rc == SOCKET_ERROR)
 					rc = Socket_error("connect", *sock);
+				if (rc == EINPROGRESS || rc == EWOULDBLOCK)
+				{
+					SOCKET* pnewSd = (SOCKET*)malloc(sizeof(SOCKET));
+					ListElement* listResult = NULL;
+
+					if (!pnewSd)
+					{
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
+					*pnewSd = *sock;
+					Paho_thread_lock_mutex(socket_mutex);
+					listResult = ListAppend(mod_s.connect_pending, pnewSd, sizeof(SOCKET));
+					Paho_thread_unlock_mutex(socket_mutex);
+					if (!listResult)
+					{
+						free(pnewSd);
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
+					Log(TRACE_MIN, 15, "Connect pending");
+					Socket_interrupt();
+				}
+			}
+			if (rc != 0 && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
+			{
+				Socket_close(*sock);
+				*sock = SOCKET_ERROR;
 			}
 		}
 	}
