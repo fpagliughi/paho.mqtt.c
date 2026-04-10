@@ -70,9 +70,23 @@ option(PAHO_WITH_UNIX_SOCKETS "Flag that defines whether to enable Unix-domain s
 
 if(PAHO_WITH_UNIX_SOCKETS)
   if(WIN32)
-    include(CheckIncludeFile)
-    check_include_file("afunix.h" HAVE_AFUNIX_H)
-    if(NOT HAVE_AFUNIX_H)
+    include(CheckCSourceCompiles)
+    set(CMAKE_REQUIRED_LIBRARIES ws2_32)
+    set(CMAKE_REQUIRED_DEFINITIONS "-DWIN32_LEAN_AND_MEAN")
+    check_c_source_compiles("
+      #include <winsock2.h>
+      #include <afunix.h>
+      int main() {
+        struct sockaddr_un addr;
+        addr.sun_family = AF_UNIX;
+        (void)addr;
+        return 0;
+      }
+	" HAVE_AF_UNIX)
+    unset(CMAKE_REQUIRED_LIBRARIES)
+    unset(CMAKE_REQUIRED_DEFINITIONS)
+
+    if(NOT HAVE_AF_UNIX)
       message(FATAL_ERROR "PAHO_WITH_UNIX_SOCKETS requires <afunix.h> which was not found. "
         "Please use Windows 10 SDK version 1803 (10.0.17134.0) or later.")
     endif()
